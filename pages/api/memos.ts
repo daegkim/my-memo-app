@@ -1,28 +1,36 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import dbConnect from '../../db'
+import { Document } from 'mongoose'
 import Memo, { IMemo } from '../../db/models/memo'
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<IMemo[]>
+  res: NextApiResponse<any>
 ) {
-  await dbConnect()
-
   switch (req.method) {
     case 'GET':
-      const memos = await getMemos();
-      res.status(200).json(memos);
-      break;
+      const memos = await getMemos()
+      res.status(200).json(memos)
+      break
     case 'POST':
-      break;
+      await setMemos(req.body)
+      res.status(200).json({ isSuccess: true })
+      break
     default:
-      break;
+      break
   }
 }
 
 export const getMemos = async (): Promise<IMemo[]> => {
-  const memos = await Memo.find<IMemo>();
+  await dbConnect()
+  const memos = await Memo.find<IMemo>()
   // nextjs hydration 때문
   // https://helloinyong.tistory.com/315
-  return JSON.parse(JSON.stringify(memos));
+  return JSON.parse(JSON.stringify(memos))
+}
+
+const setMemos = async (content: string) => {
+  await dbConnect()
+  const memo: Document = new Memo<IMemo>({ id: 1, content })
+  await memo.save()
 }

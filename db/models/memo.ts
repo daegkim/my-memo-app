@@ -5,9 +5,9 @@ export interface IMemo {
   content: string,
 }
 
-const MemoSchema = new mongoose.Schema({
+const MemoSchema = new mongoose.Schema<IMemo>({
   id: Number,
   content: String
-});
+})
 
-export default mongoose.models.Memo || mongoose.model('Memo', MemoSchema);
+export default mongoose.models.Memo || mongoose.model<IMemo>('Memo', MemoSchema)
