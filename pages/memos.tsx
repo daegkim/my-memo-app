@@ -1,9 +1,12 @@
-import type { NextPage } from 'next'
-import { getMemos } from './api/memos'
-import { IMemo } from '../db/models/memo'
-import styles from '../styles/Memo.module.scss'
 import React, { useState } from 'react'
+import type { NextPage } from 'next'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
+
+import { IMemo } from '../db/models/memo'
+import MemoService from '../service/MemoController'
+
+import styles from '../styles/Memo.module.scss'
 
 interface MemoProps {
   memos: IMemo[],
@@ -15,9 +18,11 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+
     if (!memo) {
       return
     }
+
     fetch('http://localhost:3000/api/memos', {
       method: 'POST',
       body: memo,
@@ -26,18 +31,24 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
       const result = await res.json()
       if (result.isSuccess) {
         setMemo('')
-        console.log(router.asPath)
         router.replace(router.asPath)
       } else {
         alert('서버에 문제가 발생했습니다. 저장되지 않았습니다')
       }
     })
   }
+
   const handleChangeMemo = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMemo(e.target.value)
   }
+
   return (
     <div id='memo-container'>
+      <div>
+        <Link href='/'>
+          <button>go to home</button>
+        </Link>
+      </div>
       <div>
         <form onSubmit={handleSubmit}>
           <input type='text' placeholder='enter memo' value={memo} onChange={handleChangeMemo}></input>
@@ -60,10 +71,12 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
 }
 
 export const getServerSideProps = async () => {
-  const memos = await getMemos()
+  const memoService = new MemoService()
+  const result = await memoService.getMemos()
+  // result.isSuccess가 false인 경우는 잠시 빼둠
   return {
     props: {
-      memos: memos,
+      memos: result.data,
     },
   }
 }
