@@ -3,6 +3,7 @@ import { getMemos } from './api/memos'
 import { IMemo } from '../db/models/memo'
 import styles from '../styles/Memo.module.scss'
 import React, { useState } from 'react'
+import { useRouter } from 'next/router'
 
 interface MemoProps {
   memos: IMemo[],
@@ -10,6 +11,8 @@ interface MemoProps {
 
 const Memo: NextPage<MemoProps> = ({ memos }) => {
   const [memo, setMemo] = useState<string>('')
+  const router = useRouter()
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!memo) {
@@ -19,8 +22,15 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
       method: 'POST',
       body: memo,
     })
-    .then((res) => {
-      setMemo('')
+    .then(async (res) => {
+      const result = await res.json()
+      if (result.isSuccess) {
+        setMemo('')
+        console.log(router.asPath)
+        router.replace(router.asPath)
+      } else {
+        alert('서버에 문제가 발생했습니다. 저장되지 않았습니다')
+      }
     })
   }
   const handleChangeMemo = (e: React.ChangeEvent<HTMLInputElement>) => {

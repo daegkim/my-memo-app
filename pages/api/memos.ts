@@ -22,15 +22,23 @@ export default async function handler(
 }
 
 export const getMemos = async (): Promise<IMemo[]> => {
-  await dbConnect()
-  const memos = await Memo.find<IMemo>()
-  // nextjs hydration 때문
-  // https://helloinyong.tistory.com/315
-  return JSON.parse(JSON.stringify(memos))
+  try {
+    await dbConnect()
+    const memos = await Memo.find<IMemo>().sort({id: 'desc'})
+    return JSON.parse(JSON.stringify(memos))
+  }
+  catch(err) {
+    return []
+  }
 }
 
 const setMemos = async (content: string) => {
   await dbConnect()
-  const memo: Document = new Memo<IMemo>({ id: 1, content })
-  await memo.save()
+  const memos = await Memo.find<IMemo>().sort({id: 'desc'}).limit(1)
+  const newMemo: IMemo = {
+    id: memos.length === 0 ? 1 : memos[0].id + 1,
+    content: content,
+  }
+  const memoDoc: Document = new Memo<IMemo>(newMemo)
+  await memoDoc.save()
 }
