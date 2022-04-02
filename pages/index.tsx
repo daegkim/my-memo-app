@@ -4,10 +4,14 @@ import Link from 'next/link'
 const Home: NextPage = () => {
   return (
     <div>
-      home
-      <Link href="/memos">
-        memo
-      </Link>
+      <div>
+        home
+      </div>
+      <div>
+        <Link href="/memos">
+          <button>go to memo</button>
+        </Link>
+      </div>
     </div>
   )
 }
