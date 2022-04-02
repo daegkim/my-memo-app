@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
-import MemoService from '../../service/MemoController'
+import MemoService from '../../service/MemoService'
 
 export default async function handler(
   req: NextApiRequest,

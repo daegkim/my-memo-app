@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 import { IMemo } from '../db/models/memo'
-import MemoService from '../service/MemoController'
+import MemoService from '../service/MemoService'
 
 import styles from '../styles/Memo.module.scss'
 

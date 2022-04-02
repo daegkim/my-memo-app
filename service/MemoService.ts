@@ -1,5 +1,5 @@
 import { IMemo } from '../db/models/memo'
-import BaseService, { IResponse } from './BaseController'
+import BaseService, { IResponse } from './BaseService'
 import MemoRepository from '../repository/MemoRepository'
 
 class MemoService extends BaseService<IMemo[]> {
@@ -32,7 +32,7 @@ class MemoService extends BaseService<IMemo[]> {
   setMemo = async (content: string): Promise<IResponse<IMemo[]>> => {
     try {
       const result = await this.memoRepository.setMemo(content)
-      
+
       if (result.isSuccess) {
         return this.createSuccessResponse()
       } else {
