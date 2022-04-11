@@ -14,6 +14,9 @@ export default async function handler(
     case 'POST':
       res.status(200).json(await memoService.setMemo(req.body))
       break
+    case 'DELETE':
+      res.status(200).json(await memoService.deleteMemos(req.body))
+      break
     default:
       break
   }

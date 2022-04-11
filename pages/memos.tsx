@@ -14,6 +14,7 @@ interface MemoProps {
 
 const Memo: NextPage<MemoProps> = ({ memos }) => {
   const [memo, setMemo] = useState<string>('')
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
   const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -42,6 +43,42 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
     setMemo(e.target.value)
   }
 
+  const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+    if (!e.target.checked) {
+      setCheckedItems(prev => {
+        prev.delete(id)
+        return prev
+      })
+    }
+    else {
+      setCheckedItems(prev => prev.add(id))
+    }
+  }
+
+  const handleDelete = () => {
+    const arrayCheckedItems = Array.from(checkedItems)
+    if (!arrayCheckedItems || arrayCheckedItems.length === 0) {
+      alert('삭제할 것이 없습니다.')
+    }
+
+    fetch('http://localhost:3000/api/memos', {
+      method: 'DELETE',
+      body: JSON.stringify(arrayCheckedItems),
+    })
+    .then(async (res) => {
+      const result = await res.json()
+      if (result.isSuccess) {
+        setCheckedItems(prev => {
+          prev.clear()
+          return prev
+        })
+        router.replace(router.asPath)
+      } else {
+        alert('서버에 문제가 발생했습니다. 삭제되지 않았습니다')
+      }
+    })
+  }
+
   return (
     <div id='memo-container'>
       <div>
@@ -60,11 +97,17 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
           {
             memos?.map((value, _) => {
               return (
-                <li key={value.id}> {value.content} </li>
+                <li key={value.id}>
+                  <input type="checkbox" onChange={e => handleCheckbox(e, value.id)}></input>
+                  <p>{value.content}</p>
+                </li>
               )
             })
           }
         </ul>
+      </div>
+      <div>
+        <button onClick={handleDelete}>delete</button>
       </div>
     </div>
   )

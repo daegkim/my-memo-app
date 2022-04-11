@@ -1,5 +1,5 @@
 import dbConnect from '../db'
-import { Document } from 'mongoose'
+import { Document, startSession } from 'mongoose'
 import Memo, { IMemo } from '../db/models/memo'
 
 interface IResult {
@@ -39,6 +39,30 @@ class MemoRepository {
         content: content,
       })
       await newMemo.save()
+      return { isSuccess: true }
+    }
+    catch (err) {
+      const errResult: IResult = {
+        isSuccess: false,
+        errMsg: 'err',
+      }
+      if (err instanceof Error) {
+        errResult.errMsg = err.message
+      }
+      return errResult
+    }
+  }
+
+  deleteMemos = async (deleteMemoIds: number[]): Promise<IResult> => {
+    try {
+      await dbConnect()
+      const session = await startSession()
+      session.startTransaction()
+      for(const id of deleteMemoIds) {
+        const result = await Memo.findOneAndDelete({id: id})
+      }
+      await session.commitTransaction()
+      session.endSession()
       return { isSuccess: true }
     }
     catch (err) {
