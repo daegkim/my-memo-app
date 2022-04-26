@@ -68,6 +68,26 @@ class MemoService extends BaseService<IMemo[]> {
       }
     }
   }
+
+  updateMemo = async (updateMemo: string): Promise<IResponse<IMemo[]>> => {
+    try {
+      const result = await this.memoRepository.updateMemo(JSON.parse(updateMemo))
+
+      if (result.isSuccess) {
+        return this.createSuccessResponse()
+      } else {
+        return this.createFailResponse(result.errMsg || 'err')
+      }
+    }
+    catch (err) {
+      if (err instanceof Error) {
+        return this.createFailResponse(err.message)
+      }
+      else {
+        return this.createFailResponse('err')
+      }
+    }
+  }
 }
 
 export default MemoService

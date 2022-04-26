@@ -76,6 +76,28 @@ class MemoRepository {
       return errResult
     }
   }
+
+  updateMemo = async (updateMemo: IMemo): Promise<IResult> => {
+    try {
+      await dbConnect()
+      const session = await startSession()
+      session.startTransaction()
+      await Memo.findOneAndUpdate({id: updateMemo.id}, {content: updateMemo.content})
+      await session.commitTransaction()
+      session.endSession()
+      return { isSuccess: true }
+    }
+    catch (err) {
+      const errResult: IResult = {
+        isSuccess: false,
+        errMsg: 'err',
+      }
+      if (err instanceof Error) {
+        errResult.errMsg = err.message
+      }
+      return errResult
+    }
+  }
 }
 
 export default MemoRepository

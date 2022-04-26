@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import type { NextPage } from 'next'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { cloneDeep } from 'lodash'
 
 import { IMemo } from '../db/models/memo'
 import MemoService from '../service/MemoService'
@@ -12,26 +13,28 @@ interface MemoProps {
   memos: IMemo[],
 }
 
-const Memo: NextPage<MemoProps> = ({ memos }) => {
-  const [memo, setMemo] = useState<string>('')
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set())
+const Memo: NextPage<MemoProps> = (props) => {
+  const [memos, setMemos] = useState<IMemo[]>([])
+  const [newMemo, setNewMemo] = useState<string>('')
+  const [checkedMemoIds, setCheckedMemoIds] = useState<Set<number>>(new Set())
+  const [updatedMemoId, setUpdatedMemoId] = useState<number>()
   const router = useRouter()
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!memo) {
+    if (!newMemo) {
       return
     }
 
     fetch('http://localhost:3000/api/memos', {
       method: 'POST',
-      body: memo,
+      body: newMemo,
     })
     .then(async (res) => {
       const result = await res.json()
       if (result.isSuccess) {
-        setMemo('')
+        setNewMemo('')
         router.replace(router.asPath)
       } else {
         alert('서버에 문제가 발생했습니다. 저장되지 않았습니다')
@@ -39,24 +42,29 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
     })
   }
 
-  const handleChangeMemo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setMemo(e.target.value)
+  const handleChangeNewMemo = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMemo(e.target.value)
   }
 
-  const handleCheckbox = (e: React.ChangeEvent<HTMLInputElement>, id: number) => {
+  const handleChangeMemoCheckbox = (e: React.ChangeEvent<HTMLInputElement>, memoId: number) => {
     if (!e.target.checked) {
-      setCheckedItems(prev => {
-        prev.delete(id)
-        return prev
+      setCheckedMemoIds(prev => {
+        const newCheckedMemoIds = cloneDeep(prev)
+        newCheckedMemoIds.delete(memoId)
+        return newCheckedMemoIds
       })
     }
     else {
-      setCheckedItems(prev => prev.add(id))
+      setCheckedMemoIds(prev => {
+        const newCheckedMemoIds = cloneDeep(prev)
+        newCheckedMemoIds.add(memoId)
+        return newCheckedMemoIds
+      })
     }
   }
 
-  const handleDelete = () => {
-    const arrayCheckedItems = Array.from(checkedItems)
+  const handleClickDeleteMemo = () => {
+    const arrayCheckedItems = Array.from(checkedMemoIds)
     if (!arrayCheckedItems || arrayCheckedItems.length === 0) {
       alert('삭제할 것이 없습니다.')
     }
@@ -68,7 +76,7 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
     .then(async (res) => {
       const result = await res.json()
       if (result.isSuccess) {
-        setCheckedItems(prev => {
+        setCheckedMemoIds(prev => {
           prev.clear()
           return prev
         })
@@ -79,6 +87,46 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
     })
   }
 
+  const handleDoubleClickMemo = (e: React.MouseEvent<HTMLParagraphElement>, memoId: number) => {
+    setUpdatedMemoId(memoId)
+    if (checkedMemoIds.has(memoId)) {
+      setCheckedMemoIds(prev => {
+        const newCheckedMemoIds = cloneDeep(prev)
+        newCheckedMemoIds.delete(memoId)
+        return newCheckedMemoIds
+      })
+    }
+  }
+
+  const handleChangeUpdatedMemo = (e: React.ChangeEvent<HTMLInputElement>, memoId: number) => {
+    setMemos(prev => {
+      const newMemos = cloneDeep(prev)
+      const targetIndex = newMemos.findIndex(memo => memo.id === memoId)
+      newMemos[targetIndex].content = e.target.value
+      return newMemos
+    })
+  }
+
+  const handleBlurUpdatedMemo = (memoId: number) => {
+    fetch('http://localhost:3000/api/memos', {
+      method: 'PUT',
+      body: JSON.stringify(memos.find(memo => memo.id === memoId)),
+    })
+    .then(async (res) => {
+      const result = await res.json()
+      if (result.isSuccess) {
+        setUpdatedMemoId(undefined)
+        router.replace(router.asPath)
+      } else {
+        alert('서버에 문제가 발생했습니다. 삭제되지 않았습니다')
+      }
+    })
+  }
+
+  useEffect(() => {
+    setMemos(props.memos)
+  }, [props.memos])
+
   return (
     <div id='memo-container'>
       <div>
@@ -88,18 +136,38 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
       </div>
       <div>
         <form onSubmit={handleSubmit}>
-          <input type='text' placeholder='enter memo' value={memo} onChange={handleChangeMemo}></input>
-          <input type='submit' value='click'></input>
+          <input type='text' placeholder='enter memo' value={newMemo} onChange={handleChangeNewMemo}></input>
+          <input type='submit' value='click' autoFocus></input>
         </form>
       </div>
       <div className={styles.memoList}>
         <ul>
           {
-            memos?.map((value, _) => {
+            memos?.map((memo, _) => {
               return (
-                <li key={value.id}>
-                  <input type="checkbox" onChange={e => handleCheckbox(e, value.id)}></input>
-                  <p>{value.content}</p>
+                <li key={memo.id}>
+                  {
+                    updatedMemoId === memo.id
+                    ? (
+                      <input
+                        type="text"
+                        value={memo.content || ''}
+                        onChange={e => handleChangeUpdatedMemo(e, memo.id)}
+                        onBlur={() => handleBlurUpdatedMemo(memo.id)}
+                        autoFocus
+                      />
+                    )
+                    : (
+                      <>
+                        <input
+                          type="checkbox"
+                          checked={checkedMemoIds.has(memo.id) || false}
+                          onChange={e => handleChangeMemoCheckbox(e, memo.id)}
+                        />
+                        <p onDoubleClick={e => handleDoubleClickMemo(e, memo.id)}>{memo.content}</p>
+                      </>
+                    )
+                  }
                 </li>
               )
             })
@@ -107,7 +175,7 @@ const Memo: NextPage<MemoProps> = ({ memos }) => {
         </ul>
       </div>
       <div>
-        <button onClick={handleDelete}>delete</button>
+        <button onClick={handleClickDeleteMemo}>delete</button>
       </div>
     </div>
   )
